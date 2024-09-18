@@ -1,53 +1,47 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 
-function countStudents(path) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (error, data) => {
-      if (error) {
-        reject(Error('Cannot load the database'));
-        return;
-      }
+async function countStudents(path) {
+  try {
+    // Read the file asynchronously
+    const data = await fs.readFile(path, 'utf8');
 
-      // Split the file content into lines and filter out empty lines
-      const lines = data.split('\n').filter((line) => line.trim() !== '');
+    // Split data into lines and filter out empty ones
+    const lines = data.split('\n').filter((line) => line.trim() !== '');
 
-      if (lines.length === 0) {
-        reject(Error('Cannot load the database'));
-        return;
-      }
+    if (lines.length <= 1) {
+      throw new Error('Cannot load the database');
+    }
 
-      const headers = lines[0].split(','); // Extract headers (skip the header line later)
-      const students = lines.slice(1); // Extract student data from the remaining lines
+    // Parse CSV data
+    const students = lines.slice(1); // Skip the header
+    const fields = {}; // To store students by field of study
 
-      const subjects = {}; // To store students by field of study
+    students.forEach((student) => {
+      const studentData = student.split(',');
+      if (studentData.length === 4) {
+        const firstName = studentData[0];
+        const field = studentData[3];
 
-      students.forEach((student) => {
-        const studentInfo = student.split(',');
-        if (studentInfo.length === headers.length) {
-          const firstName = studentInfo[0]; // First column is the student's first name
-          const field = studentInfo[3]; // Assuming the 4th column is the field (index 3)
-
-          if (!subjects[field]) {
-            subjects[field] = [];
-          }
-          subjects[field].push(firstName); // Group students by field
+        if (!fields[field]) {
+          fields[field] = [];
         }
-      });
-
-      // Log the total number of students
-      const totalStudents = students.filter((student) => student.split(',').length === headers.length).length;
-      console.log(`Number of students: ${totalStudents}`);
-
-      // Log the number of students and list of names per field
-      for (const field in subjects) {
-        const fieldCount = subjects[field].length;
-        const namesList = subjects[field].join(', ');
-        console.log(`Number of students in ${field}: ${fieldCount}. List: ${namesList}`);
+        fields[field].push(firstName);
       }
-
-      resolve(); // Resolve the promise once all logging is done
     });
-  });
+
+    // Log the total number of students
+    console.log(`Number of students: ${students.length}`);
+
+    // Log the number of students and their names in each field
+    for (const field in fields) {
+      if (Object.prototype.hasOwnProperty.call(fields, field)) {
+        const fieldStudents = fields[field];
+        console.log(`Number of students in ${field}: ${fieldStudents.length}. List: ${fieldStudents.join(', ')}`);
+      }
+    }
+  } catch (error) {
+    throw new Error('Cannot load the database');
+  }
 }
 
 module.exports = countStudents;
