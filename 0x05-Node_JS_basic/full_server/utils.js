@@ -1,6 +1,7 @@
 import fs from 'fs';
 
 /**
+ * @author Zaid Mohammed <https://github.com/zaidsaid-007>
  * Reads the data of students in a CSV data file.
  * @param {String} dataPath The path to the CSV data file.
  * @returns {Promise<{
